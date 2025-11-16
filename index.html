@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureBank - Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .login-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>SecureBank Login</h2>
+        
+        <!-- Login Form -->
+        <div id="loginSection">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button onclick="login()">Login</button>
+        </div>
+
+        <!-- Code Word Section -->
+        <div id="codeWordSection" class="hidden">
+            <h3>Security Verification</h3>
+            <input type="text" id="codeWord" placeholder="Enter Code Word" required>
+            <button onclick="verifyCodeWord()">Verify</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize bank data if not exists
+        function initializeBankData() {
+            if (!localStorage.getItem('bankUsers')) {
+                const users = {
+                    'user1': {
+                        password: 'pass1',
+                        codeWord: 'code1',
+                        balance: 2500.00,
+                        accountNumber: 'ACC73829145',
+                        card: {
+                            number: '4532 1489 3256 7812',
+                            holder: 'JOHN SMITH',
+                            expiry: '12/25',
+                            cvv: '123'
+                        },
+                        transactions: [
+                            { date: '2024-01-15', amount: -100, description: 'Transfer to ****1234', type: 'outgoing' },
+                            { date: '2024-01-10', amount: 500, description: 'Salary deposit', type: 'incoming' },
+                            { date: '2024-01-05', amount: -50, description: 'Online Purchase', type: 'outgoing' }
+                        ]
+                    },
+                    'user2': {
+                        password: 'pass2', 
+                        codeWord: 'code2',
+                        balance: 1800.00,
+                        accountNumber: 'ACC55667788',
+                        card: {
+                            number: '5512 3456 7890 1234',
+                            holder: 'SARAH JOHNSON',
+                            expiry: '08/26',
+                            cvv: '456'
+                        },
+                        transactions: [
+                            { date: '2024-01-12', amount: -200, description: 'Transfer to ****5678', type: 'outgoing' },
+                            { date: '2024-01-08', amount: 300, description: 'Payment received', type: 'incoming' }
+                        ]
+                    }
+                };
+                localStorage.setItem('bankUsers', JSON.stringify(users));
+            }
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username && password) {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('codeWordSection').classList.remove('hidden');
+            } else {
+                alert('Please enter username and password');
+            }
+        }
+
+        function verifyCodeWord() {
+            const username = document.getElementById('username').value;
+            const codeWord = document.getElementById('codeWord').value;
+            
+            initializeBankData();
+            const users = JSON.parse(localStorage.getItem('bankUsers'));
+            
+            if (users[username] && users[username].codeWord === codeWord) {
+                // Save current user to session
+                sessionStorage.setItem('currentUser', username);
+                window.location.href = 'dashboard.html';
+            } else {
+                alert('Invalid credentials');
+            }
+        }
+    </script>
+</body>
+</html>
