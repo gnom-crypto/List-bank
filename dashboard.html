@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureBank - Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .dashboard-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .balance-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .card-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .bank-card {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            position: relative;
+            min-height: 180px;
+        }
+        .card-chip {
+            width: 40px;
+            height: 30px;
+            background: linear-gradient(135deg, #c9c9c9, #e0e0e0);
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .card-number {
+            font-size: 18px;
+            letter-spacing: 2px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .card-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .card-holder, .card-expiry {
+            font-size: 14px;
+        }
+        .transaction-history, .transfer-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .transfer-form {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .form-group {
+            display: grid;
+            gap: 8px;
+        }
+        input, select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .hidden {
+            display: none;
+        }
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>SecureBank Dashboard</h1>
+        
+        <!-- Balance Section -->
+        <div class="balance-section">
+            <h2>Account Balance</h2>
+            <h1 id="balanceAmount">$0.00</h1>
+            <p id="accountNumber">Account: Loading...</p>
+        </div>
+
+        <!-- Card Section -->
+        <div class="card-section">
+            <div class="bank-card">
+                <div class="card-chip"></div>
+                <div class="card-number" id="cardNumberDisplay">**** **** **** ****</div>
+                <div class="card-details">
+                    <div class="card-holder">
+                        <div>CARD HOLDER</div>
+                        <div id="cardHolderDisplay">JOHN DOE</div>
+                    </div>
+                    <div class="card-expiry">
+                        <div>EXPIRES</div>
+                        <div id="cardExpiryDisplay">MM/YY</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; justify-content: center;">
+                <h3>Quick Actions</h3>
+                <button onclick="showTransferForm()">Make Transfer</button>
+                <button onclick="showTransactionHistory()">View History</button>
+            </div>
+        </div>
+
+        <!-- Transfer Form -->
+        <div id="transferSection" class="transfer-section hidden">
+            <h3>Transfer Money</h3>
+            
+            <div class="transfer-form">
+                <div class="form-group">
+                    <label>Recipient Account Number</label>
+                    <input type="text" id="recipientAccount" placeholder="Enter account number" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Amount ($)</label>
+                    <input type="number" id="transferAmount" placeholder="0.00" step="0.01" min="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Description (Optional)</label>
+                    <input type="text" id="transferDescription" placeholder="Payment for services">
+                </div>
+
+                <button onclick="processTransfer()">Confirm Transfer</button>
+                <div id="transferMessage"></div>
+            </div>
+        </div>
+
+        <!-- Transaction History -->
+        <div id="transactionHistory" class="transaction-history">
+            <h3>Transaction History</h3>
+            <table id="transactionTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionBody">
+                    <!-- Transactions will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Load user data
+        const currentUser = sessionStorage.getItem('currentUser');
+        
+        if (!currentUser) {
+            window.location.href = 'index.html';
+            throw new Error('No user session');
+        }
+
+        const users = JSON.parse(localStorage.getItem('bankUsers'));
+        const userData = users[currentUser];
+
+        if (!userData) {
+            alert('User data not found');
+            window.location.href = 'index.html';
+        }
+
+        // Display user info
+        document.getElementById('balanceAmount').textContent = `$${userData.balance.toFixed(2)}`;
+        document.getElementById('accountNumber').textContent = `Account: ${userData.accountNumber}`;
+        
+        // Display card info
+        document.getElementById('cardNumberDisplay').textContent = userData.card.number;
+        document.getElementById('cardHolderDisplay').textContent = userData.card.holder;
+        document.getElementById('cardExpiryDisplay').textContent = userData.card.expiry;
+
+        // Load transactions
+        const transactionBody = document.getElementById('transactionBody');
+        
+        function loadTransactions() {
+            transactionBody.innerHTML = '';
+            userData.transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                const amountClass = transaction.amount >= 0 ? 'style="color: green;"' : 'style="color: red;"';
+                const typeBadge = transaction.type === 'incoming' 
+                    ? '<span style="background: green; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">IN</span>'
+                    : '<span style="background: red; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">OUT</span>';
+                
+                row.innerHTML = `
+                    <td>${transaction.date}</td>
+                    <td>${transaction.description}</td>
+                    <td ${amountClass}>${transaction.amount >= 0 ? '+' : ''}$${Math.abs(transaction.amount).toFixed(2)}</td>
+                    <td>${typeBadge}</td>
+                `;
+                transactionBody.appendChild(row);
+            });
+        }
+
+        loadTransactions();
+
+        function showTransferForm() {
+            document.getElementById('transferSection').classList.toggle('hidden');
+        }
+
+        function showTransactionHistory() {
+            document.getElementById('transactionHistory').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function processTransfer() {
+            const recipientAccount = document.getElementById('recipientAccount').value;
+            const amount = parseFloat(document.getElementById('transferAmount').value);
+            const description = document.getElementById('transferDescription').value || 'Transfer';
+
+            // Validation
+            if (!recipientAccount || !amount) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            if (amount <= 0) {
+                alert('Amount must be greater than 0');
+                return;
+            }
+
+            if (amount > userData.balance) {
+                alert('Insufficient funds');
+                return;
+            }
+
+            // Find recipient in users
+            let recipientUser = null;
+            let recipientUsername = null;
+            
+            for (const [username, user] of Object.entries(users)) {
+                if (user.accountNumber === recipientAccount) {
+                    recipientUser = user;
+                    recipientUsername = username;
+                    break;
+                }
+            }
+
+            if (!recipientUser) {
+                alert('Recipient account not found');
+                return;
+            }
+
+            if (recipientAccount === userData.accountNumber) {
+                alert('Cannot transfer to your own account');
+                return;
+            }
+
+            // Process transfer
+            try {
+                // Update sender balance and transactions
+                userData.balance -= amount;
+                userData.transactions.unshift({
+                    date: new Date().toISOString().split('T')[0],
+                    amount: -amount,
+                    description: `${description} to ${recipientAccount.slice(-4)}`,
+                    type: 'outgoing'
+                });
+
+                // Update recipient balance and transactions
+                recipientUser.balance += amount;
+                recipientUser.transactions.unshift({
+                    date: new Date().toISOString().split('T')[0],
+                    amount: amount,
+                    description: `${description} from ${userData.accountNumber.slice(-4)}`,
+                    type: 'incoming'
+                });
+
+                // Save updated data to localStorage
+                users[currentUser] = userData;
+                users[recipientUsername] = recipientUser;
+                localStorage.setItem('bankUsers', JSON.stringify(users));
+
+                // Show success message
+                document.getElementById('transferMessage').innerHTML = 
+                    `<div class="success-message">
+                        Transfer of $${amount.toFixed(2)} to ${recipientAccount} completed successfully!
+                    </div>`;
+
+                // Update UI
+                document.getElementById('balanceAmount').textContent = `$${userData.balance.toFixed(2)}`;
+                loadTransactions();
+
+                // Reset form
+                document.getElementById('recipientAccount').value = '';
+                document.getElementById('transferAmount').value = '';
+                document.getElementById('transferDescription').value = '';
+
+            } catch (error) {
+                console.error('Transfer error:', error);
+                alert('Transfer failed: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
